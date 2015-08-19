@@ -27,7 +27,7 @@ for k in range(nFrames):
     STE = np.sum(window ** 2) / np.float64(len(window))
     STEs.append(STE)
 
-F = np.sort(STEs)[0:args.num_results*args.step_size:args.step_size]
+F = np.sort(STEs)[args.step_size:args.num_results*args.step_size+args.step_size:args.step_size]
 seconds = [[np.where(STEs == e)[0][0] * millisPerFrame/1000, e] for e in F]
 
 seconds = np.array(seconds)

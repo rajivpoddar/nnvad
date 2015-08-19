@@ -44,7 +44,7 @@ do
         die "sox trim failed"
     fi
 
-    ts=`python energy.py ${fn}.wav -n 5 -s 100 -w 0.20 | cut -d ' ' -f1`
+    ts=`python energy.py ${fn}.wav -n 5 -s 200 -w 0.20 | cut -d ' ' -f1`
     for t in `echo $ts`
     do
         fn2=`random_string`

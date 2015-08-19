@@ -7,7 +7,7 @@ import theano.tensor as T
 
 def main():
     fs, sig = wavfile.read(sys.argv[1])
-    sig = np.array(sig.astype(np.float)/2**8, dtype=np.float)
+    sig = np.asarray(sig, dtype=np.float)/2**8
     sig = sig.reshape((8, 200))
     spec = np.abs(np.fft.fft(sig))
 
@@ -25,7 +25,7 @@ def main():
         n_out=2
     )
 
-    classifier.load_model('params_acc_14p.pkl')
+    classifier.load_model('params_acc_8p.pkl')
 
     index = T.lscalar()  # index to a [mini]batch
 
