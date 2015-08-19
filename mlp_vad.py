@@ -8,11 +8,10 @@ import theano.tensor as T
 def main():
     fs, sig = wavfile.read(sys.argv[1])
     sig = np.array(sig.astype(np.float)/2**8, dtype=np.float)
+    sig = sig.reshape((8, 200))
     spec = np.abs(np.fft.fft(sig))
 
-    data_x = np.zeros((1, 800))
-    data_x[0] = spec
-    shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX), borrow=True)
+    shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)
 
     x = T.matrix('x')
 
@@ -26,7 +25,7 @@ def main():
         n_out=2
     )
 
-    classifier.load_model('params_acc_11p.pkl')
+    classifier.load_model('params_acc_14p.pkl')
 
     index = T.lscalar()  # index to a [mini]batch
 
@@ -38,9 +37,12 @@ def main():
         }
     )
 
-    predicted_values = predict_model(0)
-    labels=['noise', 'speech']
-    print labels[predicted_values[0]]
+    predicted_values = [predict_model(i)[0] for i in xrange(len(sig))]
+    mean = np.round(np.mean(predicted_values), 2)
+    if mean < 0.25:
+        print "noise (%.2f)" % (mean)
+    else:
+        print "speech (%.2f)" % (mean)
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,6 @@
+*.wav
+*.png
+*.pkl
+*.pyc
+*.swp
+backup-records/*

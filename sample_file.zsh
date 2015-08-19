@@ -44,11 +44,11 @@ do
         die "sox trim failed"
     fi
 
-    ts=`python energy.py ${fn}.wav -n 5 -s 1 | cut -d ' ' -f1`
+    ts=`python energy.py ${fn}.wav -n 5 -s 100 -w 0.20 | cut -d ' ' -f1`
     for t in `echo $ts`
     do
         fn2=`random_string`
-        sox ${fn}.wav ${fn2}.wav trim $t 0.1 spectrogram -x 128 -y 128 -w Hamming -r -m -o ${fn2}.png 1>/dev/null 2>&1
+        sox ${fn}.wav ${fn2}.wav trim $t 0.20 1>/dev/null 2>&1
 
         if [ ! -f ${fn2}.wav ]
         then
@@ -57,29 +57,27 @@ do
 
         while true
         do
-            prediction=`python mlp_vad.py ${fn2}.wav`
             echo "\nplaying ${fn2}.wav"
             play -q ${fn2}.wav gain -l 12 1>/dev/null 2>&1
-            echo -n "is this ${prediction} (S/n/r/d)? "
+            prediction=`python mlp_vad.py ${fn2}.wav`
+            echo -n "is this $prediction? (S/n/r/d)? "
             old_stty_cfg=$(stty -g)
             stty raw -echo ; yn=$(head -c 1) ; stty $old_stty_cfg
             case ${yn:0:1} in
                 ""|S|s ) 
-                    mv ${fn2}.wav data/audio/s_${fn2}.wav
-                    mv ${fn2}.png data/specs/s_${fn2}.png
+                    mv ${fn2}.wav data_200ms/audio/s_${fn2}.wav
                     echo "marked ${fn2} as speech"
                     break
                 ;;
 
                 N|n ) 
-                    mv ${fn2}.wav data/audio/n_${fn2}.wav
-                    mv ${fn2}.png data/specs/n_${fn2}.png
+                    mv ${fn2}.wav data_200ms/audio/n_${fn2}.wav
                     echo "marked ${fn2} as noise"
                     break
                 ;;
 
                 D|d ) 
-                    rm ${fn2}.wav ${fn2}.png
+                    rm ${fn2}.wav
                     echo "discarded ${fn2}"
                     break
                 ;;
@@ -89,7 +87,7 @@ do
 
     rm ${fn}.wav 1>/dev/null 2>&1
 
-    start_sec=$((start_sec + 360))
+    start_sec=$((start_sec + step))
 done
 
 rm $f
