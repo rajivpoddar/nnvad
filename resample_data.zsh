@@ -11,7 +11,7 @@ total=`echo $files | wc -l | tr -d ' '`
 for file in `echo $files`
 do
     count=$((count+1))
-    echo "processing file $count/$total"
+    echo -ne "processing file $count/$total\r"
 
     fn=`basename $file`
     prefix=${fn:0:1}
@@ -30,3 +30,5 @@ do
         start_sec=`printf "%0.3f" start_sec`
     done
 done
+
+echo -ne '\n'

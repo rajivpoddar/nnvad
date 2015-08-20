@@ -43,7 +43,7 @@ def main():
     audio_files = []
     n_index = 0
     s_index = 0
-    for i in range(20000):
+    for i in range(24000):
         if i%2 == 0:
             audio_files.append(n_files[n_index])
             n_index = n_index + 1
@@ -51,9 +51,9 @@ def main():
             audio_files.append(s_files[s_index])
             s_index = s_index + 1
 
-    test_set = build_set(audio_files[0:3000])
-    valid_set = build_set(audio_files[3000:6000])
-    train_set = build_set(audio_files[6000:len(audio_files)])
+    test_set = build_set(audio_files[0:2000])
+    valid_set = build_set(audio_files[2000:4000])
+    train_set = build_set(audio_files[4000:len(audio_files)])
 
     dataset = (train_set, valid_set, test_set)
 

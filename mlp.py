@@ -197,22 +197,17 @@ class MLP(object):
         # keep track of model input
         self.input = input
 
-    def save_model(self, filename='params.pkl',
-                   save_dir='.'):
+    def save_model(self, filename='models/params.pkl'):
         """ Save the parameters of the model """
 
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
-
-        save_file = open(os.path.join(save_dir, filename), 'wb')
+        save_file = open(filename, 'wb')
         cPickle.dump(self.params, save_file, protocol=cPickle.HIGHEST_PROTOCOL)
         save_file.close()
 
-    def load_model(self, filename='params.pkl',
-                   load_dir='.'):
+    def load_model(self, filename='models/params.pkl'):
         """ Load the parameters """
 
-        save_file = open(os.path.join(load_dir, filename), 'r')
+        save_file = open(filename, 'r')
         params = cPickle.load(save_file)
         save_file.close()
 
