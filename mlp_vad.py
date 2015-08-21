@@ -6,6 +6,8 @@ import theano
 import theano.tensor as T
 import string
 import pysox
+import random
+import os
 import argparse
 
 # classifer has been trained on 8khz samples of 25ms length
@@ -35,51 +37,53 @@ def downsample(fs, sig):
 
     return sig
 
-def classify(fs, sig, model='models/params.pkl'):
-    if fs != 8000:
-        sig = downsample(fs, sig)
+class MLP_VAD(object):
+    def __init__(self, model_file):
+        rng = np.random.RandomState(1234)
 
-    sig = np.asarray(sig, dtype=np.float)/2**8
+        self.x = T.matrix('x')
 
-    num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
-    num_frames = len(sig)/num_samples
-    sig = sig.reshape((num_frames, num_samples))
-    spec = np.abs(np.fft.fft(sig)) # spectrum of signal
+        self.classifier = MLP(
+            rng=rng,
+            input=self.x,
+            n_in=200,
+            n_hidden=180,
+            n_out=2
+        )
 
-    shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)
+        self.classifier.load_model(model_file)
 
-    x = T.matrix('x')
+    def classify(self, fs, sig):
+        if fs != SAMPLE_RATE:
+            sig = downsample(fs, sig)
 
-    rng = np.random.RandomState(1234)
+        sig = np.asarray(sig, dtype=np.float)/2**8
 
-    classifier = MLP(
-        rng=rng,
-        input=x,
-        n_in=200,
-        n_hidden=180,
-        n_out=2
-    )
+        num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
+        num_frames = len(sig)/num_samples
+        sig = sig.reshape((num_frames, num_samples))
+        spec = np.abs(np.fft.fft(sig)) # spectrum of signal
 
-    classifier.load_model(model)
+        shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)
 
-    index = T.lscalar()  # index to a [mini]batch
+        index = T.lscalar()  # index to a [mini]batch
 
-    predict_model = theano.function(
-        inputs=[index],
-        outputs=classifier.y_pred,
-        givens={
-            x: shared_x[index:index + 1],
-        }
-    )
+        predict_model = theano.function(
+            inputs=[index],
+            outputs=self.classifier.y_pred,
+            givens={
+                self.x: shared_x[index:index + 1],
+            }
+        )
 
-    # classify each frame
-    predicted_values = [predict_model(i)[0] for i in xrange(num_frames)]
+        # classify each frame
+        predicted_values = [predict_model(i)[0] for i in xrange(num_frames)]
 
-    # classifier returns 0 (noise) or 1 (speech) for each frame
-    # the mean of all frames is our final result
-    speech_prob = np.round(np.mean(predicted_values), 2)
+        # classifier returns 0 (noise) or 1 (speech) for each frame
+        # the mean of all frames is our final result
+        speech_prob = np.round(np.mean(predicted_values), 2)
 
-    return speech_prob
+        return speech_prob
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Voice Activity Detection using Theano')
@@ -90,10 +94,10 @@ if __name__ == '__main__':
 
     fs, sig = wavfile.read(args.input_file)
 
-    speech_prob = classify(fs, sig, model=args.model_file)
+    mlp = MLP_VAD(args.model_file)
+    speech_prob = mlp.classify(fs, sig)
 
     if speech_prob < args.noise_threshold:
         print "noise (%.2f)" % (speech_prob)
     else:
         print "speech (%.2f)" % (speech_prob)
-

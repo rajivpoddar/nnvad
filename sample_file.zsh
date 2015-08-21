@@ -21,6 +21,27 @@ function die() {
     exit 1
 }
 
+function split_file() {
+    prefix=$1
+    file=$2
+
+    split_start_sec=0
+    split_step=0.025
+
+    for i in {0..7}
+    do
+        s_fn=`random_string`
+        f1=data/audio/${prefix}_${s_fn}.wav
+        f2=data/specs/${prefix}_${s_fn}.png
+        sox $file $f1 trim $split_start_sec $split_step spectrogram -x 128 -y 128 -w Hamming -r -o $f2
+
+        split_start_sec=$((split_start_sec + split_step))
+        split_start_sec=`printf "%0.3f" split_start_sec`
+    done
+
+    rm $file
+}
+
 if [ ! -f $file ] 
 then
     echo "$file not found"
@@ -44,7 +65,7 @@ do
         die "sox trim failed"
     fi
 
-    ts=`python energy.py ${fn}.wav -n 5 -s 300 -w 0.20 | cut -d ' ' -f1`
+    ts=`python energy.py ${fn}.wav -n 5 -s 100 -w 0.20 | cut -d ' ' -f1`
     for t in `echo $ts`
     do
         fn2=`random_string`
@@ -65,13 +86,13 @@ do
             stty raw -echo ; yn=$(head -c 1) ; stty $old_stty_cfg
             case ${yn:0:1} in
                 ""|S|s ) 
-                    mv ${fn2}.wav data_200ms/audio/s_${fn2}.wav
+                    split_file 's' ${fn2}.wav
                     echo "marked ${fn2} as speech"
                     break
                 ;;
 
                 N|n ) 
-                    mv ${fn2}.wav data_200ms/audio/n_${fn2}.wav
+                    split_file 'n' ${fn2}.wav
                     echo "marked ${fn2} as noise"
                     break
                 ;;
@@ -89,5 +110,11 @@ do
 
     start_sec=$((start_sec + step))
 done
+
+num_speech=`find data/audio -name s_*.wav | wc -l | tr -d ' '`
+echo "total speech samples: $num_speech"
+
+num_noise=`find data/audio -name n_*.wav | wc -l | tr -d ' '`
+echo "total noise samples: $num_noise"
 
 rm $f

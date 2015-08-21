@@ -43,7 +43,7 @@ def main():
     audio_files = []
     n_index = 0
     s_index = 0
-    for i in range(24000):
+    for i in range(27000):
         if i%2 == 0:
             audio_files.append(n_files[n_index])
             n_index = n_index + 1
