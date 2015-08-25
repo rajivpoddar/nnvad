@@ -62,6 +62,7 @@ class MLP_VAD(object):
         num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
         num_frames = len(sig)/num_samples
         sig = sig.reshape((num_frames, num_samples))
+        sig = sig * np.hamming(num_samples)
         spec = np.abs(np.fft.fft(sig)) # spectrum of signal
 
         shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)

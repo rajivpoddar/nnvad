@@ -17,6 +17,7 @@ def build_set(files):
         fn = files[i]
         fs, sig = wavfile.read('data/audio/' + fn)
         sig = np.asarray(sig, dtype=np.float)/2**8
+        sig = np.hamming(200) * sig
         spec = np.abs(np.fft.fft(sig))
         inputs[i] = spec
         if fn[0] == 's':
@@ -43,7 +44,7 @@ def main():
     audio_files = []
     n_index = 0
     s_index = 0
-    for i in range(27000):
+    for i in range(26000):
         if i%2 == 0:
             audio_files.append(n_files[n_index])
             n_index = n_index + 1

@@ -5,7 +5,7 @@ function random_string() {
     echo `cat /dev/urandom | env LC_CTYPE=C tr -cd 'a-f0-9' | head -c 6`
 }
 
-files=`find data_200ms/audio -name \*.wav -mmin -1200`
+files=`find data_200ms/audio -name \*.wav`
 total=`echo $files | wc -l | tr -d ' '`
 
 for file in `echo $files`

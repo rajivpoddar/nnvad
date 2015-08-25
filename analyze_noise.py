@@ -49,6 +49,7 @@ if __name__ == '__main__':
         frames_read = frames_read + chunk_size
 
         speech_prob = mlp.classify(fs, signal)
+        print speech_prob
 
         if speech_prob <= args.noise_threshold:
             seconds = np.round(frame_num*window, 2)
