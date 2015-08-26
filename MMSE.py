@@ -17,17 +17,17 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
 
     y = segment(signal, W, SP, wnd)
     Y = np.fft.fft(y, axis=0)
-    YPhase = np.angle(Y[0:int(np.fix(len(Y)/2))+1,:])
-    Y = np.abs(Y[0:int(np.fix(len(Y)/2))+1,:])
+    YPhase = np.angle(Y[0:len(Y)/2+1,:])
+    Y = np.abs(Y[0:len(Y)/2+1,:])
     numberOfFrames = Y.shape[1]
 
-    NoiseLength = 1
-    alpha = 0.85
+    NoiseLength = 3
+    alpha = 0.75
 
     #NIS = int(np.fix(((IS * fs - W) / (SP * W) + 1)))
     NIS = numberOfFrames
-    N = np.mean(Y[:,0:NIS].T).T
-    LambdaD = np.mean((Y[:,0:NIS].T) ** 2).T
+    N = np.mean(Y[:,:NIS], axis=1)
+    LambdaD = np.mean((Y[:,0:NIS]) ** 2, axis=1)
 
     if saved_params != None:
         NIS = 0
@@ -41,13 +41,13 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     X = np.zeros(Y.shape)
 
     sig = y.T.flatten()
-    sig = np.append(sig, np.zeros(len(signal)*2 - len(sig)))
     vad = mlp.classify(fs, sig)
+    vad = vad.reshape((len(vad)/2, 2))
 
     for i in range(numberOfFrames):
         Y_i = Y[:,i]
 
-        if vad[i] == 0:
+        if vad[i].all() == 0:
             N = (NoiseLength * N + Y_i) / (NoiseLength + 1)
             LambdaD = (NoiseLength * LambdaD + (Y_i ** 2)) / (1 + NoiseLength)
 
@@ -57,10 +57,6 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
         Gamma = gammaNew
         nu = Gamma * xi / (1 + xi)
 
-        # log MMSE algo
-        #G = (xi/(1 + xi)) * np.exp(0.5 * expn(1, nu))
-
-        # MMSE STSA algo
         G = (Gamma1p5 * np.sqrt(nu)) / Gamma * np.exp(-1 * nu / 2) * ((1 + nu) * bessel(0, nu / 2) + nu * bessel(1, nu / 2))
         Indx = np.isnan(G) | np.isinf(G)
         G[Indx] = xi[Indx] / (1 + xi[Indx])
@@ -91,16 +87,13 @@ def OverlapAdd2(XNEW, yphase, windowLen, ShiftLen):
     return sig
 
 def segment(signal, W, SP, Window):
-    L = len(signal)
-    SP = int(np.fix(W * SP))
-    N = int(np.fix(L-W)/SP + 1)
+    segments = np.empty((0, W))
+    start = 0
+    while start + W <= len(signal):
+        segments = np.append(segments, [signal[start:start+W] * Window], axis=0)
+        start = start + W * SP
 
-    Window = Window.flatten(1)
-
-    Index = (np.tile(np.arange(0,W), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
-    hw = np.tile(Window, (N, 1)).T
-    Seg = signal[Index] * hw
-    return Seg
+    return segments.T
 
 def bessel(v, X):
     return ((1j**(-v))*jv(v,1j*X)).real
@@ -110,8 +103,6 @@ def bessel(v, X):
 parser = argparse.ArgumentParser(description='Speech enhancement/noise reduction using MMSE STSA algorithm and an MLP VAD')
 parser.add_argument('input_file', action='store', type=str, help='input file to clean')
 parser.add_argument('output_file', action='store', type=str, help='output file to write (default: stdout)', default=sys.stdout)
-parser.add_argument('-w, --window-size', action='store', type=int, dest='window_size', help='hamming window size (25ms)', default=25)
-parser.add_argument('-n, --noise-threshold', action='store', type=int, dest='noise_threshold', help='noise thresold (default: 3)', default=3)
 args = parser.parse_args()
 
 input_file = Sndfile(args.input_file, 'r')
@@ -119,7 +110,7 @@ input_file = Sndfile(args.input_file, 'r')
 fs = input_file.samplerate
 num_frames = input_file.nframes
 
-window_size = int(np.round(args.window_size/1000*fs))
+window_size = int(0.05*fs) # 50ms
 
 mlp = MLP_VAD('models/params.pkl')
 

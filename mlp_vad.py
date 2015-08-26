@@ -80,7 +80,7 @@ class MLP_VAD(object):
 
         # classify each frame
         predicted_values = [predict_model(i)[0] for i in xrange(num_frames)]
-        return predicted_values
+        return np.asarray(predicted_values)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Voice Activity Detection using Theano')
