@@ -25,7 +25,7 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     alpha = 0.85
 
     #NIS = int(np.fix(((IS * fs - W) / (SP * W) + 1)))
-    NIS = numberOfFrames/2
+    NIS = numberOfFrames
     N = np.mean(Y[:,0:NIS].T).T
     LambdaD = np.mean((Y[:,0:NIS].T) ** 2).T
 
@@ -40,12 +40,14 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     Gamma1p5 = math.gamma(1.5)
     X = np.zeros(Y.shape)
 
+    sig = y.T.flatten()
+    sig = np.append(sig, np.zeros(len(signal)*2 - len(sig)))
+    vad = mlp.classify(fs, sig)
+
     for i in range(numberOfFrames):
         Y_i = Y[:,i]
 
-        SpeechFlag = vad(y[:,i], fs, mlp)
-
-        if SpeechFlag == 0:
+        if vad[i] == 0:
             N = (NoiseLength * N + Y_i) / (NoiseLength + 1)
             LambdaD = (NoiseLength * LambdaD + (Y_i ** 2)) / (1 + NoiseLength)
 
@@ -91,28 +93,21 @@ def OverlapAdd2(XNEW, yphase, windowLen, ShiftLen):
 def segment(signal, W, SP, Window):
     L = len(signal)
     SP = int(np.fix(W * SP))
-    N = int(np.fix(L-W)/SP)
+    N = int(np.fix(L-W)/SP + 1)
 
     Window = Window.flatten(1)
 
-    Index = (np.tile(np.arange(1,W+1), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
+    Index = (np.tile(np.arange(0,W), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
     hw = np.tile(Window, (N, 1)).T
     Seg = signal[Index] * hw
     return Seg
-
-def vad(sig, fs, mlp):
-    speech_prob = mlp.classify(fs, sig)
-    if speech_prob == 0.0:
-        return 0
-    else:
-        return 1
 
 def bessel(v, X):
     return ((1j**(-v))*jv(v,1j*X)).real
 
 # main
 
-parser = argparse.ArgumentParser(description='Speech enhancement/noise reduction using Log MMSE STSA algorithm')
+parser = argparse.ArgumentParser(description='Speech enhancement/noise reduction using MMSE STSA algorithm and an MLP VAD')
 parser.add_argument('input_file', action='store', type=str, help='input file to clean')
 parser.add_argument('output_file', action='store', type=str, help='output file to write (default: stdout)', default=sys.stdout)
 parser.add_argument('-w, --window-size', action='store', type=int, dest='window_size', help='hamming window size (25ms)', default=25)

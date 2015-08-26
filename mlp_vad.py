@@ -21,6 +21,7 @@ def downsample(fs, sig):
     in_file = random_string() + ".wav"
     out_file = random_string() + ".wav"
 
+    sig = np.array(sig*np.iinfo(np.int16).max, dtype=np.int16)
     wavfile.write(in_file, fs, sig) 
 
     sox_in = pysox.CSoxStream(in_file)
@@ -31,6 +32,7 @@ def downsample(fs, sig):
     sox_out.close()
 
     fs, sig = wavfile.read(out_file)
+    sig = np.asarray(sig, dtype=np.float)/2**8
 
     os.unlink(in_file)
     os.unlink(out_file)
@@ -53,16 +55,15 @@ class MLP_VAD(object):
 
         self.classifier.load_model(model_file)
 
-    def classify(self, fs, sig):
+    def classify(self, fs, sig, wnd=None):
         if fs != SAMPLE_RATE:
             sig = downsample(fs, sig)
-
-        sig = np.asarray(sig, dtype=np.float)/2**8
 
         num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
         num_frames = len(sig)/num_samples
         sig = sig.reshape((num_frames, num_samples))
-        sig = sig * np.hamming(num_samples)
+        if wnd != None:
+            sig = sig * wnd
         spec = np.abs(np.fft.fft(sig)) # spectrum of signal
 
         shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)
@@ -79,12 +80,7 @@ class MLP_VAD(object):
 
         # classify each frame
         predicted_values = [predict_model(i)[0] for i in xrange(num_frames)]
-
-        # classifier returns 0 (noise) or 1 (speech) for each frame
-        # the mean of all frames is our final result
-        speech_prob = np.round(np.mean(predicted_values), 2)
-
-        return speech_prob
+        return predicted_values
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Voice Activity Detection using Theano')
@@ -96,9 +92,9 @@ if __name__ == '__main__':
     fs, sig = wavfile.read(args.input_file)
 
     mlp = MLP_VAD(args.model_file)
-    speech_prob = mlp.classify(fs, sig)
+    speech_prob = mlp.classify(fs, sig, np.hamming(200))
 
-    if speech_prob < args.noise_threshold:
+    if np.mean(speech_prob) < args.noise_threshold:
         print "noise (%.2f)" % (speech_prob)
     else:
         print "speech (%.2f)" % (speech_prob)
