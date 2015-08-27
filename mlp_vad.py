@@ -94,7 +94,8 @@ if __name__ == '__main__':
     mlp = MLP_VAD(args.model_file)
     speech_prob = mlp.classify(fs, sig, np.hamming(200))
 
-    if np.mean(speech_prob) < args.noise_threshold:
-        print "noise (%.2f)" % (speech_prob)
+    result = np.mean(speech_prob)
+    if result < args.noise_threshold:
+        print "noise (%.2f)" % (result)
     else:
-        print "speech (%.2f)" % (speech_prob)
+        print "speech (%.2f)" % (result)

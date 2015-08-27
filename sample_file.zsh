@@ -31,15 +31,15 @@ function split_file() {
     for i in {0..7}
     do
         s_fn=`random_string`
-        f1=data/audio/${prefix}_${s_fn}.wav
-        f2=data/specs/${prefix}_${s_fn}.png
-        sox $file $f1 trim $split_start_sec $split_step spectrogram -x 128 -y 128 -w Hamming -r -o $f2
+        f1=data/audio/${prefix}_${s_fn}
+        sox $file -r 8k -b 8 ${f1}.wav trim $split_start_sec $split_step
+        sox $file -r 48k -b 16 ${f1}_48k.wav trim $split_start_sec $split_step
 
         split_start_sec=$((split_start_sec + split_step))
         split_start_sec=`printf "%0.3f" split_start_sec`
     done
 
-    rm $file
+    mv $file data/audio/${prefix}_${file}.wav
 }
 
 if [ ! -f $file ] 
@@ -49,8 +49,8 @@ then
 fi
 
 f=`random_string`.wav
-echo "downsampling..."
-sox $file -r 8k -b 8 $f remix - 1>/dev/null 2>&1
+echo "processing..."
+sox $file $f remix - 1>/dev/null 2>&1
 
 start_sec=60
 step=360
@@ -80,7 +80,7 @@ do
         do
             echo "\nplaying ${fn2}.wav"
             play -q ${fn2}.wav gain -l 12 1>/dev/null 2>&1
-            prediction=`python mlp_vad.py ${fn2}.wav`
+            prediction=`python mlp_vad.py ${fn2}.wav 2>/dev/null`
             echo -n "is this $prediction? (S/n/r/d)? "
             old_stty_cfg=$(stty -g)
             stty raw -echo ; yn=$(head -c 1) ; stty $old_stty_cfg
@@ -111,10 +111,10 @@ do
     start_sec=$((start_sec + step))
 done
 
-num_speech=`find data/audio -name s_*.wav | wc -l | tr -d ' '`
+num_speech=`find data/audio/ -name s_*.wav | wc -l | tr -d ' '`
 echo "total speech samples: $num_speech"
 
-num_noise=`find data/audio -name n_*.wav | wc -l | tr -d ' '`
+num_noise=`find data/audio/ -name n_*.wav | wc -l | tr -d ' '`
 echo "total noise samples: $num_noise"
 
 rm $f
