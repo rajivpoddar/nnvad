@@ -38,6 +38,7 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     X = np.zeros(Y.shape)
 
     sig = y.T.flatten()
+    sig = np.append(sig, np.zeros(len(signal)*2 - len(sig)))
     vad = mlp.classify(fs, sig)
     vad = vad.reshape((len(vad)/2, 2))
 
