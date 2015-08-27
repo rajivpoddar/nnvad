@@ -91,7 +91,7 @@ def segment(signal, W, SP, Window):
 
     Window = Window.flatten(1)
 
-    Index = (np.tile(np.arange(1,W+1), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
+    Index = (np.tile(np.arange(0,W), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
     hw = np.tile(Window, (N, 1)).T
     Seg = signal[Index] * hw
     return Seg
