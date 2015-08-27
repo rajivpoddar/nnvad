@@ -24,9 +24,10 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     NoiseLength = 1
     alpha = 0.75
 
-    N = np.ones(Y[:,0].shape)
-    LambdaD = np.ones(Y[:,0].shape)
-    if saved_params != None:
+    if saved_params == None:
+        N = np.ones(Y[:,0].shape)
+        LambdaD = np.ones(Y[:,0].shape)
+    else:
         N = saved_params['N']
         LambdaD = saved_params['LambdaD']
 
@@ -99,6 +100,7 @@ def bessel(v, X):
 parser = argparse.ArgumentParser(description='Speech enhancement/noise reduction using MMSE STSA algorithm and an MLP VAD')
 parser.add_argument('input_file', action='store', type=str, help='input file to clean')
 parser.add_argument('output_file', action='store', type=str, help='output file to write (default: stdout)', default=sys.stdout)
+parser.add_argument('-m, --model-file', action='store', type=str, dest='model_file', help='model file to use (default: models/params.pkl)', default='models/params.pkl')
 args = parser.parse_args()
 
 input_file = Sndfile(args.input_file, 'r')
@@ -108,17 +110,17 @@ num_frames = input_file.nframes
 
 window_size = int(0.05*fs) # 50ms
 
-mlp = MLP_VAD('models/params.pkl')
+mlp = MLP_VAD(args.model_file)
 
 output_file = Sndfile(args.output_file, 'w', Format(type=input_file.file_format, encoding='pcm16', endianness=input_file.endianness), input_file.channels, fs)
 
-chunk_size = int(np.round(fs*12))
+chunk_size = int(np.round(fs*60))
 saved_params = None
 
 frames_read = 0
 while (frames_read < num_frames):
     if frames_read + chunk_size > num_frames:
-        break;
+        chunk_size = num_frames - frames_read
 
     signal = input_file.read_frames(chunk_size)
     frames_read = frames_read + chunk_size
