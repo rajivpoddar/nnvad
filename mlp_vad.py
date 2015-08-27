@@ -1,5 +1,5 @@
 from mlp import MLP
-from scipy.io import wavfile
+from scikits.audiolab import Sndfile, Format
 import sys
 import numpy as np
 import theano
@@ -21,8 +21,13 @@ def downsample(fs, sig):
     in_file = random_string() + ".wav"
     out_file = random_string() + ".wav"
 
-    sig = np.array(sig*np.iinfo(np.int16).max, dtype=np.int16)
-    wavfile.write(in_file, fs, sig) 
+    pad_length = fs - len(sig)%fs
+    if pad_length > 0:
+        sig = np.append(sig, np.zeros(pad_length))
+
+    f = Sndfile(in_file, 'w', Format(type="wav", encoding='pcm16', endianness="file"), 1, fs)
+    f.write_frames(sig) 
+    f.close()
 
     sox_in = pysox.CSoxStream(in_file)
     sox_out = pysox.CSoxStream(out_file, 'w', pysox.CSignalInfo(SAMPLE_RATE, 1, 8), fileType='wav')
@@ -31,8 +36,14 @@ def downsample(fs, sig):
     sox_chain.flow_effects()
     sox_out.close()
 
-    fs, sig = wavfile.read(out_file)
-    sig = np.asarray(sig, dtype=np.float)/2**8
+    f = Sndfile(out_file, 'r')
+    sig = f.read_frames(f.nframes)
+    f.close()
+
+    min_frames = (SAMPLE_RATE * WINDOW_SIZE)
+    pad_length = min_frames - len(sig)%min_frames
+    if pad_length > 0:
+        sig = np.append(sig, np.zeros(pad_length))
 
     os.unlink(in_file)
     os.unlink(out_file)
@@ -89,7 +100,10 @@ if __name__ == '__main__':
     parser.add_argument('-t, --noise-threshold', action='store', type=float, dest='noise_threshold', help='noise thresold (default: 0.25)', default=0.25)
     args = parser.parse_args()
 
-    fs, sig = wavfile.read(args.input_file)
+    f = Sndfile(args.input_file, 'r')
+    fs = f.samplerate
+    sig = f.read_frames(f.nframes)
+    f.close()
 
     mlp = MLP_VAD(args.model_file)
     speech_prob = mlp.classify(fs, sig, np.hamming(200))

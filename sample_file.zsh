@@ -39,7 +39,7 @@ function split_file() {
         split_start_sec=`printf "%0.3f" split_start_sec`
     done
 
-    mv $file data/audio/${prefix}_${file}.wav
+    mv $file data_200ms/audio/${prefix}_${file}
 }
 
 if [ ! -f $file ] 

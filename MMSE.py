@@ -38,8 +38,8 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     X = np.zeros(Y.shape)
 
     sig = y.T.flatten()
-    sig = np.append(sig, np.zeros(len(signal)*2 - len(sig)))
     vad = mlp.classify(fs, sig)
+    vad = vad[0:Y.shape[1]*2]
     vad = vad.reshape((len(vad)/2, 2))
 
     for i in range(numberOfFrames):
@@ -85,13 +85,16 @@ def OverlapAdd2(XNEW, yphase, windowLen, ShiftLen):
     return sig
 
 def segment(signal, W, SP, Window):
-    segments = np.empty((0, W))
-    start = 0
-    while start + W <= len(signal):
-        segments = np.append(segments, [signal[start:start+W] * Window], axis=0)
-        start = start + W * SP
+    L = len(signal)
+    SP = int(np.fix(W * SP))
+    N = int(np.fix(L-W)/SP) + 1
 
-    return segments.T
+    Window = Window.flatten(1)
+
+    Index = (np.tile(np.arange(1,W+1), (N,1)) + np.tile(np.arange(0,N) * SP, (W,1)).T).T
+    hw = np.tile(Window, (N, 1)).T
+    Seg = signal[Index] * hw
+    return Seg
 
 def bessel(v, X):
     return ((1j**(-v))*jv(v,1j*X)).real
