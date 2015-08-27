@@ -426,6 +426,5 @@ def test_mlp(learning_rate=0.0001, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
                           os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((end_time - start_time) / 60.))
 
-
 if __name__ == '__main__':
     test_mlp(learning_rate=0.0001, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20, n_hidden=180, dataset='data/audio.pkl.gz')

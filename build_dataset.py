@@ -3,7 +3,7 @@
 import cPickle
 from os import listdir, path
 import numpy as np
-from scipy.io import wavfile
+from scikits.audiolab import Sndfile, Format
 import sys
 import gzip
 import random
@@ -15,10 +15,14 @@ def build_set(files):
 
     for i in range(size):
         fn = files[i]
-        fs, sig = wavfile.read('data/audio/' + fn)
-        sig = np.asarray(sig, dtype=np.float)/2**8
+
+        f = Sndfile('data/audio/' + fn, 'r')
+        sig = f.read_frames(f.nframes)
+        f.close()
+
         sig = np.hamming(200) * sig
         spec = np.abs(np.fft.fft(sig))
+
         inputs[i] = spec
         if fn[0] == 's':
             targets[i] = 1
@@ -44,7 +48,7 @@ def main():
     audio_files = []
     n_index = 0
     s_index = 0
-    for i in range(26000):
+    for i in range(28000):
         if i%2 == 0:
             audio_files.append(n_files[n_index])
             n_index = n_index + 1

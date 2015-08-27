@@ -21,9 +21,10 @@ def downsample(fs, sig):
     in_file = random_string() + ".wav"
     out_file = random_string() + ".wav"
 
-    pad_length = fs - len(sig)%fs
-    if pad_length > 0:
-        sig = np.append(sig, np.zeros(pad_length))
+    frame_len = fs * WINDOW_SIZE
+    pad = len(sig)%frame_len
+    if pad > 0:
+        sig = np.append(sig, np.zeros(frame_len - pad))
 
     f = Sndfile(in_file, 'w', Format(type="wav", encoding='pcm16', endianness="file"), 1, fs)
     f.write_frames(sig) 
@@ -39,11 +40,6 @@ def downsample(fs, sig):
     f = Sndfile(out_file, 'r')
     sig = f.read_frames(f.nframes)
     f.close()
-
-    min_frames = (SAMPLE_RATE * WINDOW_SIZE)
-    pad_length = min_frames - len(sig)%min_frames
-    if pad_length > 0:
-        sig = np.append(sig, np.zeros(pad_length))
 
     os.unlink(in_file)
     os.unlink(out_file)

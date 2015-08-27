@@ -23,23 +23,24 @@ function die() {
 
 function split_file() {
     prefix=$1
-    file=$2
+    s_file=$2
 
     split_start_sec=0
     split_step=0.025
 
     for i in {0..7}
     do
-        s_fn=`random_string`
+        s_fn=`random_string`.wav
         f1=data/audio/${prefix}_${s_fn}
-        sox $file -r 8k -b 8 ${f1}.wav trim $split_start_sec $split_step
-        sox $file -r 48k -b 16 ${f1}_48k.wav trim $split_start_sec $split_step
+        f2=data_48k/audio/${prefix}_${s_fn}
+        sox $s_file -r 8k -b 8 ${f1} trim $split_start_sec $split_step
+        sox $s_file -r 48k -b 16 ${f2} trim $split_start_sec $split_step
 
         split_start_sec=$((split_start_sec + split_step))
         split_start_sec=`printf "%0.3f" split_start_sec`
     done
 
-    mv $file data_200ms/audio/${prefix}_${file}
+    mv $s_file data_200ms/audio/${prefix}_${s_file}
 }
 
 if [ ! -f $file ] 
@@ -65,7 +66,7 @@ do
         die "sox trim failed"
     fi
 
-    ts=`python energy.py ${fn}.wav -n 5 -s 100 -w 0.20 | cut -d ' ' -f1`
+    ts=`python energy.py ${fn}.wav -n 5 -s 10 -w 0.20 | cut -d ' ' -f1`
     for t in `echo $ts`
     do
         fn2=`random_string`
@@ -111,10 +112,10 @@ do
     start_sec=$((start_sec + step))
 done
 
-num_speech=`find data/audio/ -name s_*.wav | wc -l | tr -d ' '`
+num_speech=`find data/audio/ -name s_\*.wav | wc -l | tr -d ' '`
 echo "total speech samples: $num_speech"
 
-num_noise=`find data/audio/ -name n_*.wav | wc -l | tr -d ' '`
+num_noise=`find data/audio/ -name n_\*.wav | wc -l | tr -d ' '`
 echo "total noise samples: $num_noise"
 
 rm $f
