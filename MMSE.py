@@ -21,16 +21,12 @@ def MMSESTSA(signal, fs, W, mlp, saved_params=None):
     Y = np.abs(Y[0:len(Y)/2+1,:])
     numberOfFrames = Y.shape[1]
 
-    NoiseLength = 3
+    NoiseLength = 1
     alpha = 0.75
 
-    #NIS = int(np.fix(((IS * fs - W) / (SP * W) + 1)))
-    NIS = numberOfFrames
-    N = np.mean(Y[:,:NIS], axis=1)
-    LambdaD = np.mean((Y[:,0:NIS]) ** 2, axis=1)
-
+    N = np.ones(Y[:,0].shape)
+    LambdaD = np.ones(Y[:,0].shape)
     if saved_params != None:
-        NIS = 0
         N = saved_params['N']
         LambdaD = saved_params['LambdaD']
 
