@@ -20,7 +20,7 @@ def build_set(files):
         sig = f.read_frames(f.nframes)
         f.close()
 
-        sig = np.hamming(200) * sig
+        sig = sig * np.hamming(200)
         spec = np.abs(np.fft.fft(sig))
 
         inputs[i] = spec

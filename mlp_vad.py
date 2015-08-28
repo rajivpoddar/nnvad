@@ -62,15 +62,14 @@ class MLP_VAD(object):
 
         self.classifier.load_model(model_file)
 
-    def classify(self, fs, sig, wnd=None):
+    def classify(self, fs, sig):
         if fs != SAMPLE_RATE:
             sig = downsample(fs, sig)
 
         num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
         num_frames = len(sig)/num_samples
         sig = sig.reshape((num_frames, num_samples))
-        if wnd != None:
-            sig = sig * wnd
+        sig = sig * np.hamming(num_samples)
         spec = np.abs(np.fft.fft(sig)) # spectrum of signal
 
         shared_x = theano.shared(np.asarray(spec, dtype=theano.config.floatX), borrow=True)
@@ -102,7 +101,7 @@ if __name__ == '__main__':
     f.close()
 
     mlp = MLP_VAD(args.model_file)
-    speech_prob = mlp.classify(fs, sig, np.hamming(200))
+    speech_prob = mlp.classify(fs, sig)
 
     result = np.mean(speech_prob)
     if result < args.noise_threshold:
