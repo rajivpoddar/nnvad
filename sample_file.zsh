@@ -10,6 +10,12 @@ then
 fi
 
 file=$1
+e_step=10
+
+if [ ! -z $2 ]
+then
+    e_step=$2
+fi
 
 function random_string() {
     echo `cat /dev/urandom | env LC_CTYPE=C tr -cd 'a-f0-9' | head -c 6`
@@ -66,7 +72,7 @@ do
         die "sox trim failed"
     fi
 
-    ts=`python energy.py ${fn}.wav -n 5 -s 10 -w 0.20 | cut -d ' ' -f1`
+    ts=`python energy.py ${fn}.wav -n 5 -s $e_step -w 0.20 | cut -d ' ' -f1`
     for t in `echo $ts`
     do
         fn2=`random_string`
