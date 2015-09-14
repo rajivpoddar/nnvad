@@ -68,7 +68,7 @@ class MLP_VAD(object):
 
         num_samples = int(WINDOW_SIZE * SAMPLE_RATE)
         num_frames = len(sig)/num_samples
-        sig = sig.reshape((num_frames, num_samples))
+        sig = sig[0:num_frames*num_samples].reshape((num_frames, num_samples))
         sig = sig * np.hamming(num_samples)
         spec = np.abs(np.fft.fft(sig)) # spectrum of signal
 
